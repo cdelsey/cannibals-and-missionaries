@@ -16,7 +16,7 @@ class Multiplier_Exists:
 		
 	def add_digit(self, digit):
 		self.multiplier = self.multiplier * 10 + digit
-		return (self.multiplier, this)
+		return (self.multiplier, self)
 
 class EntityDictionary:
 	def __init__(self):
