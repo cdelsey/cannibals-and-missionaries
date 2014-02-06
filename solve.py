@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import copy
+
 Entities = {	'M' : "Missionaries",
 				'C' : "Cannibals", 
 				'B' : "Boats"}
@@ -24,6 +26,10 @@ class EntityDictionary:
 	
 	def __repr__(self):
 		return repr(self.entities)
+
+	def __str__(self):
+		return 'M' * self.entities['M'] + 'C' * self.entities['C']
+		
 
 	def __eq__(self, other):
 		return self.entities == other.entities
@@ -88,14 +94,11 @@ def ParseStateString(state_string):
 
 	return entities
 
-Actions = [ ParseStateString(x) for x in "M C 2M 2C MC".split() ]
+Actions = [ ParseStateString(x) for x in "BM BC 2MB 2CB MCB".split() ]
 
 class BankState:
-	def __init__(self, state_string = None, copy = None):
-		if copy:
-			self.entities = copy.entities
-		else:
-			self.entities = ParseStateString(state_string)
+	def __init__(self, state_string):
+		self.entities = ParseStateString(state_string)
 
 	def __repr__(self):
 		string = ""
@@ -137,14 +140,10 @@ class BankState:
 
 
 class CandMState:
-	def __init__(self, init_string = None, copy = None):
-		if copy:
-			self.left_bank = copy.left_bank
-			self.right_bank = copy.right_bank
-		else:
-			(left, right) = init_string.strip().split('|')
-			self.left_bank = BankState(left)
-			self.right_bank = BankState(right)
+	def __init__(self, init_string):
+		(left, right) = init_string.strip().split('|')
+		self.left_bank = BankState(left)
+		self.right_bank = BankState(right)
 
 	def __repr__(self):
 		return "%s | %s" % (self.left_bank, self.right_bank)
@@ -153,7 +152,7 @@ class CandMState:
 		return self.left_bank == other.left_bank and self.right_bank == other.right_bank
 	
 	def __add__(self, action):
-		result = CandMState(copy = self)
+		result = copy.deepcopy(self)
 		(depart, arrive) = result.bank_roles()
 		depart -= action
 		arrive += action
@@ -168,16 +167,6 @@ class CandMState:
 	def get_successors(self):
 		(depart, arrive) = self.bank_roles()
 		return [(action, self+action) for action in Actions if arrive.arrival_action_valid(action) and depart.departure_action_valid(action)]
-
-#def treeSearch(problem, strategy):
-#	fringe = [ problem.initialState ]
-#	while True:
-#		if len(fringe) == 0:
-#			return None
-#		node = selectFrom(fringe, strategy)
-#		if problem.goalTest(node):
-#			return pathTo(node)
-#		fringe.a
 
 class SearchNode:
 	known_states = []
@@ -210,10 +199,18 @@ class Problem:
 
 	def solve(self, strategy):
 		while len(self.fringe) > 0:
+			print "Considering"
+			for n in self.fringe:
+				print n.state
 			(node, fringe) = strategy(self.fringe)
+			print "Choosing " + str(node.state)
 			if node.state == self.goal:
 				return node
-			self.fringe = fringe + node.successors()
+			successors = node.successors()
+			print "Adding to fringe"
+			for n in successors:
+				print n.state
+			self.fringe = fringe + successors
 		return None
 
 def breadth_first(fringe):
@@ -232,8 +229,9 @@ def main():
 		if len(path) == 1:
 			print "Initial state is goal state"
 		else:
+			print "Found solution:"
 			for p in path:
-				print p.state
+				print str(p.action) + " -->\t" + str(p.state)
 	else:
 		print "No solution found"
 	
